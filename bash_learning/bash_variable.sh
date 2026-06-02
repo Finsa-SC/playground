@@ -23,15 +23,24 @@
 #echo $name
 
 
-declare -A name
-declare -A name
+declare -A student
 
-student[name]=rikka
+student[name]="rikka"
 student[age]=17
-student[gender]=famale
+student[gender]="female"
 
-if [ student[gender] == "male" ] then;
+if [ "${student[age]}" -lt 18 ]; then
+  if [ "${student[gender]}" = "male" ]; then
+    suffix="kun"
+  else
+    suffix="chan"
+  fi
+else
+  suffix="san"
+fi
+
+echo "Hello ${student[name]}-${suffix}"
 
 
-
-echo "Hello ${name} ${if gender == "male" then "kun" else "chan"},"
+#
+#echo "Hello ${name} ${if gender == "male" then "kun" else "chan"},"
