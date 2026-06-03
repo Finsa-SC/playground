@@ -29,8 +29,7 @@ coverage.xml
 *.swn
 .DS_Store
 
-# --- OS / Arch Linux / Environment ---
-# File sistem atau file konfigurasi lokal
+# --- OS / Arch Linux / Environment --
 .directory
 Desktop.ini
 Thumbs.db
@@ -39,17 +38,14 @@ Thumbs.db
 .env.*
 
 # --- Security & Recon Files (Opsional) ---
-# Kalau kamu simpan hasil scan/recon, jangan sampai ikut ke-push!
 *.dumpcap
 *.pcap
 *.log
-*.txt
 results/
 scans/
 wordlists/
 
 # --- Proyekmu (FinSky) ---
-# Tambahkan folder hasil build atau output spesifikmu di sini
 dist/
 build/
 *.egg-info/
