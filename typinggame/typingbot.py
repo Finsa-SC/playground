@@ -91,49 +91,64 @@ class TypingBot:
 
         typed = []
         sleep(random.uniform(*self.opp_start_delay))
-        for i in range(0, word_len):
+
+        i = -1
+        while i < word_len - 1:
             print("\033[H\033[J", end="")
-            print(self.__str__())
+            # print(self.__str__())
             current_delay = base_delay
+            panic = self.getting_panic(word)
 
-            # Rng for panic
-            if self.getting_panic(word):
-                current_delay *= (1 + self.opp_panic_multiplier)
-
-            # rng for accuracy
-            if self.accuracy():
-                typed.append(word[i])
+            # Realize Mistake
+            if not panic and i >= 0 and word[i] != typed[i]:
+                print("".join(typed))
+                sleep(current_delay)
+                print("\033[H\033[J", end="")
+                typed.pop()
+                print("".join(typed))
+                i -= 1
             else:
-                typed.append(random.choice(string.ascii_letters))
+                i += 1
 
-            print("".join(typed))
+                # Rng for panic
+                if panic:
+                    current_delay *= (1 + self.opp_panic_multiplier)
+                    self.setting_panic()
+
+                # rng for accuracy
+                if self.accuracy():
+                    typed.append(word[i])
+                else:
+                    typed.append(random.choice(string.ascii_letters))
+
+                print("".join(typed))
+
             sleep(current_delay)
 
     def accuracy(self) -> bool:
         return self.opp_accuracy >= random.uniform(1, 100)
 
-    def getting_panic(self, word):
+    def getting_panic(self, word) -> bool:
         chance = min(
             self.opp_panic_multiplier * (len(word) / 10),
             0.95
         )
-        panic = chance > random.random()
-        if panic:
-            self.opp_panic_multiplier = min(
-                self.opp_panic_multiplier + 0.03,
-                0.95
-            )
+        return chance > random.random()
 
-            if random.random() >= 0.5:
-                penalty = random.uniform(1, 3)
-            else:
-                penalty = random.uniform(1, 6)
-            self.opp_accuracy = max(
-                self.opp_accuracy - penalty,
-                0
-            )
+    def setting_panic(self):
+        self.opp_panic_multiplier = min(
+            self.opp_panic_multiplier + 0.03,
+            0.95
+        )
 
-        return panic
+        if random.random() >= 0.5:
+            penalty = random.uniform(1, 3)
+        else:
+            penalty = random.uniform(1, 6)
+        self.opp_accuracy = max(
+            self.opp_accuracy - penalty,
+            0
+        )
 
     def __str__(self):
         return f"Your opponent is {self.opp_name}, \n{self.opp_wpm} wpm \nwith {self.opp_accuracy}% accuracy\n{self.opp_panic_multiplier} panic"
