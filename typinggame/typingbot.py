@@ -1,4 +1,3 @@
-import subprocess
 import random
 import string
 from enum import Enum
@@ -11,14 +10,16 @@ class Enemy(Enum):
         "desc": "John is a villager",
         "wpm": 18,
         "accuracy": 72,
-        "start_delay": (1.8, 3.2)
+        "start_delay": (1.8, 3.2),
+        "panic": 2
     }
 
     Marlo = {
         "desc": "Marlo is a construction worker",
         "wpm": 28,
         "accuracy": 76,
-        "start_delay": (1.3, 2.4)
+        "start_delay": (1.3, 2.4),
+        "panic": 2
     }
 
     Juliana = {
@@ -26,6 +27,7 @@ class Enemy(Enum):
         "wpm": 42,
         "accuracy": 82,
         "start_delay": (1.02, 1.88),
+        "panic": 2
     }
 
     Edward = {
@@ -33,6 +35,7 @@ class Enemy(Enum):
         "wpm": 63,
         "accuracy": 90,
         "start_delay": (0.82, 1.48),
+        "panic": 2
     }
 
     Bastian = {
@@ -40,13 +43,15 @@ class Enemy(Enum):
         "wpm": 92,
         "accuracy": 95,
         "start_delay": (0.42, 0.88),
+        "panic": 2
     }
 
     Finn = {
         "desc": "Finn is a legendary keyboard warrior",
         "wpm": 125,
         "accuracy": 98,
-        "start_delay": (0.8, 0.18),
+        "start_delay": (0.18, 0.8),
+        "panic": 2
     }
 
 class TypingBot:
@@ -78,24 +83,23 @@ class TypingBot:
             raise ValueError("Invalid input")
 
     def bot_typing(self, word: str):
-        word = [i for i in word]
+        word = list(word)
         word_len = len(word)
+        current_delay = 60 / (self.opp_wpm * 5)
 
         typed = []
         sleep(random.uniform(*self.opp_start_delay))
         for i in range(0, word_len):
-            subprocess.run(["clear"])
+            print("\033[H\033[J", end="")
             if self.accuracy():
                 typed.append(word[i])
             else:
                 typed.append(random.choice(string.ascii_letters))
             print("".join(typed))
-            sleep(60 / (self.opp_wpm * word_len))
+            sleep(current_delay)
 
     def accuracy(self) -> bool:
-        if self.opp_accuracy >= random.uniform(1, 100):
-            return True
-        return False
+        return self.opp_accuracy >= random.uniform(1, 100)
 
     def __str__(self):
         return f"Your opponent is {self.opp_name}, {self.opp_wpm} wpm with {self.opp_accuracy}% accuracy"
@@ -103,10 +107,10 @@ class TypingBot:
 if __name__ == "__main__":
     typing = TypingBot()
 
-    subprocess.run(["clear"])
+    print("\033[H\033[J", end="")
     typing.select_bot()
 
-    subprocess.run(["clear"])
+    print("\033[H\033[J", end="")
     print(typing)
 
     rword = RandomWords().get_random_word()
