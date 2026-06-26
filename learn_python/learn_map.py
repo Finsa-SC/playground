@@ -15,6 +15,13 @@ def modulus(x):
 ganjil = list(map(modulus, angka))
 print(ganjil)
 
+def checking(ip: str, status: str):
+  print(f"{ip} -> {status}")
+
+device = [("192.168.1.1", "200"), ("192.168.1.2", "500")]
+greetings = list(map(checking, *device))
+
+greetings = list(map(lambda x: checking(*x), device))
 
 # Map converter ==============================================
 nama = ["agus", "rahmat", "joko"]
