@@ -8,7 +8,10 @@ device = {
 }
 
 device['waf'] = "cloudflare"
-device['waf'] = ""
+device.update({
+  'os': 'Linux',
+  'ttl': 64,
+})
 print(device)
 
 print("\n\n========================= Delete value =======================")
@@ -24,7 +27,7 @@ for key, value in data_dict.items():
   print(f"{key:<10}{value}") 
 
 
-print("\033[H\033[J", end="")
+#print("\033[H\033[J", end="")
 print("\n\n========================= Nested dict =======================")
 agus   = dict(age=13, country='Indonesia',   married=False)
 rahmat = dict(age=45, country='Netherlands', married=True)
@@ -38,3 +41,19 @@ name['Joko'] = joko
 
 for key, value in name.items():
   print(f"{key}: {value.get('age')}")
+
+print("========================= Merge Dict =======================")
+food = {
+  'burgers': 2,
+  'potato': 1,
+  'kfc': 3,
+}
+baverage = {
+  'water': 1,
+  'cola': 2,
+}
+merge = food | baverage
+
+food.update(baverage)
+print(food)
+print(merge)

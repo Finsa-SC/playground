@@ -119,7 +119,7 @@ class TypingBot:
                 if self.accuracy():
                     typed.append(word[i])
                 else:
-                    typed.append(random.choice(string.ascii_letters))
+                    typed.append(random.choice(string.ascii_lowercase))
 
                 print("".join(typed))
 
