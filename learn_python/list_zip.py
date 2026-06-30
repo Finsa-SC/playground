@@ -10,5 +10,3 @@ orang_indo_eng_long = list(zip_longest(orang_indo, orang_eng))
 print(orang_indo_eng)
 print(orang_indo_eng_long)
 print(orang_orang)
-
-# No ai nih bos
