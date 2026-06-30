@@ -1,7 +1,7 @@
 # Nilai dari default parameter tidak hilang selama fungsi masih ada
 
 
-def defaults(item = "noname", lst=[]):
+def defaults(item = "noname", lst= []):
   lst.append(item)
   return lst
 
@@ -11,7 +11,7 @@ print(defaults.__defaults__)
 
 
 
-def logger(name, cache=set()):
+def logger(name, cache= set()):
   cache.add(name)
   return cache
 

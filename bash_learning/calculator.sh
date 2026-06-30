@@ -2,6 +2,7 @@ calculator() {
   local operasi=$1
   local angka1=$2
   local angka2=$3
+
   if [ operasi == "tambah" ]; then
     return ((angka1 + angka2))
   elif [ operasi == "kurang" ]; then
@@ -18,4 +19,4 @@ read -p "Operasi     : " op
 read -p "First number: " fst
 read -p "Secon number: " scn
 
-echo calculator op fst scn
+calculator op fst scn

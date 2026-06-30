@@ -16,9 +16,10 @@ print(device)
 
 print("\n\n========================= Delete value =======================")
 user_data = dict(name="agus", age=12, married=False)
-#user_data.del('name')
+print(f"Before: {user_data}")
+# del user_data['name']
 user_data.pop('name')
-print(user_data)
+print(f"After : {user_data}")
 
 
 print("\n\n========================= access dict =======================")
@@ -42,7 +43,7 @@ name['Joko'] = joko
 for key, value in name.items():
   print(f"{key}: {value.get('age')}")
 
-print("========================= Merge Dict =======================")
+print("\n\n========================= Merge Dict =======================")
 food = {
   'burgers': 2,
   'potato': 1,
@@ -52,8 +53,8 @@ baverage = {
   'water': 1,
   'cola': 2,
 }
-merge = food | baverage
+merge = food | baverage # Using union
 
-food.update(baverage)
+food.update(baverage) # Using update
 print(food)
 print(merge)
