@@ -25,6 +25,9 @@ case $2 in
       echo "Cannot divide with zero"
     fi
     ;;
+   "xx")
+    echo $(( $1**$3 ))
+    ;;
   *)
     echo "Invalid operator"
 esac
