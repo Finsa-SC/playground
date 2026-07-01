@@ -3,10 +3,10 @@
 #Input validation
 if [[ -z $1 || -z $2 || -z $3 ]]; then
   echo "Missing argument detected!"
-  exit 0
-elif [[ $1 =~ ^[0-9]*$ ]]; then
+  exit 1
+elif [[ ! $1 =~ ^[0-9]*$ || ! $3 =~ ^[0-9]*$ ]]; then
   echo "Invalid number, please input digit only"
-  exit 0
+  exit 1
 fi
 
 # Input value when call this script [./calculator 2 + 3]
