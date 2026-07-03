@@ -55,18 +55,38 @@ list_of_number = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 #         list_lower.append(random.randint(1, 9))
 #
 
-print(f"\n\n{'='*10} Round Robin {'='*10}")
-list_robin = list_of_number.copy()
+# print(f"\n\n{'='*10} Round Robin {'='*10}")
+# list_robin = list_of_number.copy()
+#
+# while len(list_robin) > 0:
+#     print(list_robin)
+#     list_robin[0] -= 1
+#     if 0 in list_robin:
+#         list_robin.remove(0)
+#         continue
+#
+#     if list_robin:
+#         unfinished = list_robin.pop(0)
+#         list_robin.append(unfinished)
+#
+#     sleep(1)
 
-while len(list_robin) > 0:
-    print(list_robin)
-    list_robin[0] -= 1
-    if 0 in list_robin:
-        list_robin.remove(0)
-        continue
+print(f"\n\n{'='*10} Linked List {'='*10}")
+class Node:
+    def __init__(self, value: list, node: 'Node' = None):
+        self.value = value
+        self.previous = node
 
-    if list_robin:
-        unfinished = list_robin.pop(0)
-        list_robin.append(unfinished)
 
-    sleep(1)
+    def __str__(self):
+        return f"{self.value}"
+
+node1 = Node([1, 2, 3])
+Node.last_node = node1
+
+node2 = Node([4, 5, 6], node1)
+node3 = Node([4, 5, 6], node2)
+
+print(node1)
+print(node1.previous)
+print(node3.previous)
