@@ -26,9 +26,7 @@ class BackupSystem:
 
     # Check if backup is success or not
     def backup_success(self) -> bool:
-        if self.backup_dir.exists():
-            return True
-        return False
+        return self.backup_dir.exists()
 
     # Run all function
     def do_backup(self, make_directory: bool = True) -> str:
