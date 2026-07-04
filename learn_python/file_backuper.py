@@ -1,5 +1,4 @@
 from pathlib import Path
-import asyncio
 
 class BackupSystem:
     def __init__(self, target: str, destination: str = "/tmp", backup_name: str = ""):
@@ -22,7 +21,7 @@ class BackupSystem:
             raise FileNotFoundError(f"No such directory for {self.target}")
 
     # Backup file into destination with set name
-    async def backup_data(self) -> None:
+    def backup_data(self) -> None:
         self.target.copy(self.backup_dir)
 
     # Check if backup is success or not
@@ -32,10 +31,10 @@ class BackupSystem:
         return False
 
     # Run all function
-    async def do_backup(self, make_directory: bool = True) -> str:
+    def do_backup(self, make_directory: bool = True) -> str:
         self.check_destination(make_directory=make_directory)
         self.check_target()
-        await self.backup_data()
+        self.backup_data()
 
         if self.backup_success():
             return f"Success make a backup for {self.target}\n Backup location: {self.backup_dir}"
@@ -45,11 +44,11 @@ if __name__ == "__main__":
     try:
         # input_target = input("Input your target directory to backup: ")
         # input_destination = input("Input your target directory to backup: ")
-        input_target = "/home/silence-suzuka/test"
-        input_destination = "/home/silence-suzuka/"
-        backup = BackupSystem(input_target, input_destination)
+        input_target = "/home/silence-suzuka/Pictures"
+        input_destination = "/tmp"
+        backup = BackupSystem(input_target, input_destination, backup_name="my_backup")
 
-        print(asyncio.run(backup.do_backup(make_directory=True)))
+        print(backup.do_backup(make_directory=True))
 
     except Exception as e:
         print(f"Error occured while trying to backup data: {e}")
