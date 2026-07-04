@@ -5,7 +5,7 @@ class BackupSystem:
         self.target = Path(target)
         self.destination = Path(destination)
         self.backup_name = backup_name if backup_name.strip() else f"{target}_backup"
-        self.backup_dir = Path(self.destination / self.backup_name)
+        self.backup_path = Path(self.destination / self.backup_name)
 
     # Check and make destination folder if not exist
     def check_destination(self, make_directory: bool = True) -> None:
@@ -22,11 +22,11 @@ class BackupSystem:
 
     # Backup file into destination with set name
     def backup_data(self) -> None:
-        self.target.copy(self.backup_dir)
+        self.target.copy(self.backup_path)
 
     # Check if backup is success or not
     def backup_success(self) -> bool:
-        return self.backup_dir.exists()
+        return self.backup_path.exists()
 
     # Run all function
     def do_backup(self, make_directory: bool = True) -> str:
@@ -35,7 +35,7 @@ class BackupSystem:
         self.backup_data()
 
         if self.backup_success():
-            return f"Success make a backup for {self.target}\n Backup location: {self.backup_dir}"
+            return f"Success make a backup for {self.target}\n Backup location: {self.backup_path}"
         return f"Failed to make a backup for {self.target}"
 
 if __name__ == "__main__":
