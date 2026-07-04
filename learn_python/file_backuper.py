@@ -4,12 +4,20 @@ class BackupSystem:
     def __init__(self, target: str, destination: str = "/tmp", backup_name: str = ""):
         self.target = Path(target)
         self.destination = Path(destination)
-        self.backup_name = backup_name if backup_name.strip() else f"{target}_backup"
+        self.backup_name = (
+            backup_name.strip()
+            if backup_name.strip()
+            else f"{self.target.name}_backup"
+        )
         self.backup_path = Path(self.destination / self.backup_name)
 
     # Check and make destination folder if not exist
     def check_destination(self, make_directory: bool = True) -> None:
-        if not self.destination.exists():
+        # Check destination and exit if dst exist but is a file
+        if self.destination.exists():
+            if not self.destination.is_dir():
+                raise NotADirectoryError("Destination is a file, not directory!")
+        else:
             if make_directory:
                 self.destination.mkdir(exist_ok=True, parents=True)
             else:
@@ -44,9 +52,13 @@ if __name__ == "__main__":
         # input_destination = input("Input your target directory to backup: ")
         input_target = "/home/silence-suzuka/Pictures"
         input_destination = "/tmp"
-        backup = BackupSystem(input_target, input_destination, backup_name="my_backup")
+        backup = BackupSystem(
+            input_target,
+            input_destination,
+            backup_name="my_backup"
+        )
 
-        print(backup.do_backup(make_directory=True))
+        print(backup.do_backup(make_directory=False))
 
     except Exception as e:
         print(f"Error occured while trying to backup data: {e}")
