@@ -1,5 +1,7 @@
 from pathlib import Path
 
+ignore_path = Path("/home/silence-suzuka/.gitignore")
+
 class BackupSystem:
     def __init__(self, target: str, destination: str = "/tmp", backup_name: str = ""):
         self.target = Path(target)
@@ -11,6 +13,7 @@ class BackupSystem:
         )
         self.anchor = self.target
         self.backup_path = Path(self.destination / self.backup_name)
+        self.ignore_list = {}
 
     # Check and make destination folder if not exist
     def check_destination(self, make_directory: bool = True) -> None:
@@ -28,6 +31,10 @@ class BackupSystem:
     def check_target(self):
         if not self.target.exists():
             raise FileNotFoundError(f"No such directory for {self.target}")
+
+    def read_ignore_list(self) -> None:
+        with open(ignore_path, 'r') as file:
+            self.ignore_list = set(file.readlines())
 
     @staticmethod
     def make_directory(directory: Path) -> None:
@@ -72,7 +79,7 @@ if __name__ == "__main__":
         # input_target = input("Input your target directory to backup: ")
         # input_destination = input("Input your target directory to backup: ")
 
-        input_target = "/home/silence-suzuka/Pictures"
+        input_target = "/home/silence-suzuka/test_1"
         input_destination = "/tmp/my_backup"
         backup = BackupSystem(
             input_target,
