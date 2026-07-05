@@ -13,7 +13,7 @@ class BackupSystem:
         )
         self.anchor = self.target
         self.backup_path = Path(self.destination / self.backup_name)
-        self.ignore_list = {}
+        self.ignore_list = set()
 
     # Check and make destination folder if not exist
     def check_destination(self, make_directory: bool = True) -> None:
@@ -34,7 +34,10 @@ class BackupSystem:
 
     def read_ignore_list(self) -> None:
         with open(ignore_path, 'r') as file:
-            self.ignore_list = set(file.readlines())
+            for line in file:
+                if line.strip() and not line.startswith("#"):
+                    self.ignore_list.add(line)
+        print(self.ignore_list)
 
     @staticmethod
     def make_directory(directory: Path) -> None:
@@ -44,6 +47,10 @@ class BackupSystem:
         destination = directory
 
         for file in iter_dir:
+            print(self.ignore_list)
+            if file in self.ignore_list:
+                continue
+
             if file.is_dir():
                 # Make nested directory
                 destination = directory / file.name
@@ -67,7 +74,8 @@ class BackupSystem:
     def do_backup(self, make_directory: bool = True) -> str:
         self.check_destination(make_directory=make_directory)
         self.check_target()
-        self.backup_data()
+        self.read_ignore_list()
+        # self.backup_data()
 
         if self.backup_success():
             print(self.backup_path)
