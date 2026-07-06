@@ -16,6 +16,7 @@ def load_ignore():
         for line in file:
             if line.strip() and not line.startswith("#"):
                 rule = set_rule(line)
+                print(f"{rule} {line}")
                 add_rule_and_grouping(rule, line.replace("\n", ""))
 
 def add_rule_and_grouping(rule, word):
@@ -42,6 +43,8 @@ def match_glob(file: str) -> bool:
 
 def match_directory(file: str) -> bool:
     for directory in directory_list:
+        print(f"debug: {directory}")
+        print(f"debug: {file}")
         if fnmatch.fnmatch(file, directory):
             return True
     return False
@@ -53,14 +56,16 @@ def rule_matching(rule, file: str) -> bool:
         case Rule.Glob:
             return match_glob(file)
         case Rule.Directory:
+            print("Its directory")
             return match_directory(file)
         case _:
+            print("Ini yang ke run")
             return False
 
-def set_rule(word):
+def set_rule(word, is_dir: bool = False):
     if "*" in word:
         return Rule.Glob
-    elif word.endswith("/"):
+    elif word.endswith("/") or is_dir:
         return Rule.Directory
     elif word.startswith("."):
         return Rule.Exact
@@ -71,6 +76,12 @@ def set_rule(word):
 load_ignore()
 
 for file in Path("/home/silence-suzuka/test_1").iterdir():
-    rule = set_rule(file.name)
-    match = rule_matching(rule, file.name)
-    print(f"{file.name} {rule} {match}")
+    file_name = f"{file.name}/" if file.is_dir() else file.name
+
+    rule = set_rule(file.name, is_dir=file.is_dir())
+    match = rule_matching(rule, file_name)
+    print(f"{file_name} {rule} {match}")
+
+print(glob_list)
+print(exact_list)
+print(directory_list)
