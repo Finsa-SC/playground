@@ -1,34 +1,76 @@
 import socket
+from concurrent.futures import ThreadPoolExecutor
 
-HOST_NAME = socket.gethostname()
-print(f"Hostname: {HOST_NAME}")
+class MyServer:
+    def __init__(self):
+        self.SERVER = None
+        self.PORT = 12562
+        self.ADDRESS = None
+        self.FORMAT = 'utf-8'
 
-HOST = socket.gethostbyname(HOST_NAME)
-print(f"Host: {HOST}")
+        self.server_socket = None
+        self.resolver = "8.8.8.8"
 
-ADDR = (HOST, 5050)
-print(f"ADDR: {ADDR}\n\n")
+    # Context manager
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_server()
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(ADDR)
+        if exc_type:
+            print(f"[ERROR] {exc_type}")
+        return True
 
-s.listen()
-print(f"[INFO] Server is listening on {ADDR[0]}:{ADDR[1]}")
-print("[INFO] Waiting request...")
-conn, addr = s.accept()
+    # Start the server to listening
+    def start_server(self) -> None:
+        print("[INFO] Starting server...")
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            server.bind(self.ADDRESS)
+            server.listen()
+            self.server_socket = server
+            print(f"[SUCCESS] Server started successfully\n[INFO] Server listening on {self.SERVER}:{self.PORT}")
+        except Exception as e:
+            server.close()
+            print(f"[ERROR] Failed to run the server: {e}")
 
-print("[INFO] Connected")
-print(f"Connection={conn}\n Address={addr}")
+    def stop_server(self) -> None:
+        if self.server_socket:
+            self.server_socket.close()
+            print("[SUCCESS] Server has been stopped")
 
-while True:
-    data = conn.recv(1024)
+    # Resolve local ip address with make connection to dns resolver and get the sock name
+    def get_hostname(self) -> None:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            resolver_addr = (self.resolver, 80)
+            s.connect(resolver_addr)
+            print(f"[INFO] Success resolve hostname from {self.resolver}: {self.SERVER}")
+            self.SERVER = s.getsockname()[0]
+            self.ADDRESS = (self.SERVER, self.PORT)
 
-    if not data.strip():
-        print("[CLOSED] Connection closed")
-        break
 
-    print(data)
-    conn.send(b"Hello\n")
+    def connecting_client(self, conn, addr):
+        data = conn.recv(1024).decode(self.FORMAT)
+        if data:
+            print(data)
+        conn.close()
 
-conn.close()
-s.close()
+    def client_connect(self):
+        with ThreadPoolExecutor() as executor:
+            while True:
+                conn, addr = self.server_socket.accept()
+                executor.submit(self.connecting_client, conn, addr)
+
+    def run_server(self):
+        self.get_hostname()
+        self.start_server()
+        self.client_connect()
+        self.stop_server()
+
+
+with MyServer() as my_server:
+    my_server.run_server()
+
+# my_server.get_hostname()
+# my_server.start_server()
+# my_server.stop_server()
