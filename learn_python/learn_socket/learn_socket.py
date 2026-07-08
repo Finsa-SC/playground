@@ -1,5 +1,7 @@
 import socket
 from concurrent.futures import ThreadPoolExecutor
+import threading
+
 
 class MyServer:
     def __init__(self):
@@ -8,6 +10,8 @@ class MyServer:
         self.ADDRESS = None
         self.FORMAT = 'utf-8'
 
+        self.clients = set()
+        self.lock = threading.Lock()
         self.server_socket = None
         self.resolver = "8.8.8.8"
 
@@ -50,9 +54,24 @@ class MyServer:
 
 
     def connecting_client(self, conn, addr):
-        data = conn.recv(1024).decode(self.FORMAT)
-        if data:
-            print(data)
+        with self.lock:
+            self.clients.add(addr)
+            print(f"[INFO] New connection has been created with {addr}, total connected: {len(self.clients)}")
+        while True:
+            data = conn.recv(1024)
+
+            if not data:
+                break
+
+            text = data.decode(self.FORMAT)
+
+            if "exit" in text.lower():
+                break
+            print(data.decode(self.FORMAT))
+
+        with self.lock:
+            self.clients.discard(addr)
+            print(f"[INFO] {addr} disconnected, total connected: {len(self.clients)}")
         conn.close()
 
     def client_connect(self):
