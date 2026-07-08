@@ -14,12 +14,14 @@ class MyServer:
         self.lock = threading.Lock()
         self.server_socket = None
         self.resolver = "8.8.8.8"
+        self.executor = ThreadPoolExecutor(max_workers=10)
 
     # Context manager
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop_server()
+        self.executor.shutdown(wait=False)
 
         if exc_type:
             print(f"[ERROR] {exc_type}")
@@ -29,6 +31,7 @@ class MyServer:
     def start_server(self) -> None:
         print("[INFO] Starting server...")
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             server.bind(self.ADDRESS)
             server.listen()
@@ -45,46 +48,58 @@ class MyServer:
 
     # Resolve local ip address with make connection to dns resolver and get the sock name
     def get_hostname(self) -> None:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            resolver_addr = (self.resolver, 80)
-            s.connect(resolver_addr)
-            print(f"[INFO] Success resolve hostname from {self.resolver}: {self.SERVER}")
-            self.SERVER = s.getsockname()[0]
-            self.ADDRESS = (self.SERVER, self.PORT)
-
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                resolver_addr = (self.resolver, 80)
+                s.connect(resolver_addr)
+                self.SERVER = s.getsockname()[0]
+                print(f"[INFO] Success resolve hostname from {self.resolver}: {self.SERVER}")
+        except Exception:
+            self.SERVER = socket.gethostbyname(socket.gethostname())
+            print(f"[ERROR]: Error occured while trying to resolve host, use {self.SERVER} instead")
+        self.ADDRESS = (self.SERVER, self.PORT)
 
     def connecting_client(self, conn, addr):
         with self.lock:
             self.clients.add(addr)
             print(f"[INFO] New connection has been created with {addr}, total connected: {len(self.clients)}")
-        while True:
-            data = conn.recv(1024)
 
-            if not data:
-                break
+        try:
+            while True:
+                data = conn.recv(1024)
 
-            text = data.decode(self.FORMAT)
+                if not data:
+                    break
 
-            if "exit" in text.lower():
-                break
-            print(data.decode(self.FORMAT))
+                text = data.decode(self.FORMAT).strip()
 
-        with self.lock:
-            self.clients.discard(addr)
-            print(f"[INFO] {addr} disconnected, total connected: {len(self.clients)}")
-        conn.close()
+                if "exit" in text.lower():
+                    break
+                print(data.decode(self.FORMAT))
+        except Exception as e:
+            print(f"[WARNING] Connection error with {addr}: {e}")
+        finally:
+            with self.lock:
+                self.clients.discard(addr)
+                print(f"[INFO] {addr} disconnected, total connected: {len(self.clients)}")
+            conn.close()
 
     def client_connect(self):
-        with ThreadPoolExecutor() as executor:
+        try:
             while True:
                 conn, addr = self.server_socket.accept()
-                executor.submit(self.connecting_client, conn, addr)
+                self.executor.submit(self.connecting_client, conn, addr)
+        except OSError:
+            print(f"[INFO] Socket closed, stopping client acceptance")
 
     def run_server(self):
         self.get_hostname()
         self.start_server()
-        self.client_connect()
-        self.stop_server()
+
+        try:
+            self.client_connect()
+        except KeyboardInterrupt:
+            print("[INFO] Server shutting down by user...")
 
 
 with MyServer() as my_server:
