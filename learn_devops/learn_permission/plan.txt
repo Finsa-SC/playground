@@ -1,0 +1,9 @@
+[✔] wake up
+[✔] take a bath
+[✔] make a breakfast
+[✔] go to work
+[ ] come home
+[ ] take a shower
+[ ] make a dinner
+[ ] self study
+[ ] sleep
