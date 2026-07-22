@@ -3,5 +3,6 @@ name = "playground"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
+    "dotenv>=0.9.9",
     "random-word>=1.0.13",
 ]

@@ -1,0 +1,25 @@
+# Each entry describes one directory to monitor.
+#
+# name:        friendly identifier, used in logs
+# path:        directory to scan for incoming files
+# pattern:     glob pattern of files to pick up
+# action:      one of "move", "copy", "log_only"
+# destination: required for "move"/"copy", ignored for "log_only"
+
+watches:
+  - name: inbound-orders
+    path: /srv/incoming/orders
+    pattern: "*.csv"
+    action: move
+    destination: /srv/processed/orders
+
+  - name: inbound-invoices
+    path: /srv/incoming/invoices
+    pattern: "*.xml"
+    action: copy
+    destination: /srv/processed/invoices
+
+  - name: audit-drop
+    path: /srv/incoming/audit
+    pattern: "*.*"
+    action: log_only
