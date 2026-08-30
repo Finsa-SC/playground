@@ -1,0 +1,24 @@
+name: Auto Pull Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-code:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: action/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run test / check
+        run: |
+          uv sync
+          uv run python -c "print('Hello from github action')"
