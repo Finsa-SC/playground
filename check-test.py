@@ -1,0 +1,1 @@
+print("This program is ok")

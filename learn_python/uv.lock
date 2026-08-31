@@ -2,6 +2,17 @@ version = 1
 revision = 3
 requires-python = ">=3.14"
 
+[manifest]
+members = [
+    "cache-cleanup",
+    "learn-python",
+]
+
+[[package]]
+name = "cache-cleanup"
+version = "0.1.0"
+source = { editable = "learn_pathlib/cache_cleanup" }
+
 [[package]]
 name = "learn-python"
 version = "0.1.0"
