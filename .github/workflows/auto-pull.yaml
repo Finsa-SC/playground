@@ -21,4 +21,4 @@ jobs:
       - name: Run test / check
         run: |
           uv sync
-          uv run main.py
+          uv run check-test.py
