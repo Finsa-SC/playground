@@ -1,0 +1,29 @@
+services:
+  api:
+    build: ./api
+    container_name: myapi
+    restart: unless-stopped
+    expose:
+      - "8000"
+    networks:
+      - api-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: mynginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-available:/etc/nginx/sites-available:ro
+      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
+      - /dev/null:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    networks:
+      - api-net
+
+networks:
+  api-net:
+    driver: bridge
