@@ -48,26 +48,45 @@ class Solution:
     #         return True
     #     return False
 
+    # My stable solution
+    # def isValid(self, s: str) -> bool:
+        # close_delimiter = {
+        #     ']': '[',
+        #     '}': '{',
+        #     ')': '(',
+        # }
+        # founded_open = []
+        #
+        # for d in s:
+        #     if d not in close_delimiter:
+        #         founded_open.append(d)
+        #     else:
+        #         if not founded_open or founded_open[-1] != close_delimiter[d]:
+        #             return False
+        #         founded_open.pop()
+        #
+        # return len(founded_open) == 0
+
+    # Ai Recomendation solution
+    # Use check in beginning
+    # Menyimpan penutup dan langsung lakukan perbandingan
     def isValid(self, s: str) -> bool:
-        close_delimiter = {
-            ']': '[',
-            '}': '{',
-            ')': '(',
-        }
-        founded_open = []
+        if len(s) % 2 != 0:
+            return False
 
-        for d in s:
-            if d not in close_delimiter:
-                founded_open.append(d)
-            else:
-                if not founded_open or founded_open[-1] != close_delimiter[d]:
-                    return False
-                founded_open.pop()
+        pairs = {'[': ']', '{': '}', '(': ')'}
 
-        return len(founded_open) == 0
+        stack = []
+        for char in s:
+            if char in pairs:
+                stack.append(pairs[char])
+            elif not stack or stack.pop() != char:
+                return False
+
+        return not stack
 
 if __name__ == "__main__":
     sol = Solution()
 
-    delimiters = "(){}({})"
+    delimiters = "{)"
     print(sol.isValid(delimiters))
