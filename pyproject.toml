@@ -1,6 +1,6 @@
 [project]
 name = "playground"
-version = "1.20.0"
+version = "1.21.0"
 description = "Playground workspace"
 readme = "README.md"
 requires-python = ">=3.11"
