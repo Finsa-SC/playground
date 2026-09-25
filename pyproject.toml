@@ -1,6 +1,10 @@
 [project]
 name = "playground"
+<<<<<<< HEAD
 version = "1.21.1"
+=======
+version = "1.19.1"
+>>>>>>> 548ff09 (chore(pyproject.toml): bump version to v1.19.1)
 description = "Playground workspace"
 readme = "README.md"
 requires-python = ">=3.11"
