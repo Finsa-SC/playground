@@ -1,2 +1,2 @@
 print("Hello, World!")
-print('Siapa namamu?')
+print('Who's your name?')
