@@ -1,7 +1,0 @@
-[project]
-name = "playground"
-version = "2.2.1"
-description = "Playground workspace"
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = []
