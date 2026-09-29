@@ -30,6 +30,6 @@ INSERT INTO products (product_name, price, stock, description) VALUES
 ('Roti Cokelat Keju', 12000.00, 30, 'Roti manis isian keju cheddar dan meseres cokelat'),
 ('Croissant Butter', 22000.00, 15, 'Croissant gurih renyah dengan butter Perancis');
 
-INSERT INTO transactions (product_id, count, price) VALUES
+INSERT INTO transactions (product_id, quantity, price) VALUES
 (1, 2, 30000.00), -- Beli 2 Roti Tawar
 (3, 1, 22000.00); -- Beli 1 Croissant

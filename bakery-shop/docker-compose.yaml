@@ -1,4 +1,15 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    networks:
+      - postgres-net
+    ports:
+      - "8000:8000"
+
   postgres:
     image: postgres:17
     container_name: shop-postgres
@@ -11,6 +22,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    networks:
+      - postgres-net
 
 volumes:
   postgres_data:
+
+networks:
+  postgres-net:
+    driver: bridge
