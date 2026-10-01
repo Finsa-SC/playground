@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Toko Roti</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Toko Roti</h1>
+    <nav>
+      <button class="tab active" data-view="shop">Toko</button>
+      <button class="tab" data-view="admin">Admin</button>
+    </nav>
+    <span id="status" class="status" title="Status API">●</span>
+  </header>
+
+  <main>
+    <!-- TOKO -->
+    <section id="view-shop" class="view">
+      <div class="hero">
+        <h2>Baru keluar dari oven</h2>
+        <p>Pilih roti favoritmu, klik beli, selesai.</p>
+      </div>
+
+      <h3>Paling laris</h3>
+      <div id="popular" class="grid"></div>
+
+      <h3>Semua produk</h3>
+      <div id="products" class="grid"></div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="view hidden">
+      <h3 id="form-title">Tambah produk</h3>
+      <form id="product-form" class="form">
+        <input type="hidden" id="f-id">
+        <label>Nama <input id="f-name" required></label>
+        <label>Harga <input id="f-price" type="number" min="0" step="any" required></label>
+        <label>Stok <input id="f-stock" type="number" min="0" step="1"></label>
+        <label class="wide">Deskripsi <textarea id="f-desc" rows="2"></textarea></label>
+        <div class="wide actions">
+          <button type="submit" class="btn">Simpan</button>
+          <button type="button" id="f-cancel" class="btn ghost hidden">Batal</button>
+        </div>
+      </form>
+
+      <h3>Daftar produk</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Nama</th><th>Harga</th><th>Stok</th><th></th></tr></thead>
+          <tbody id="admin-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="js/script.js"></script>
+</body>
+</html>

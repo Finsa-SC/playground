@@ -1,0 +1,109 @@
+:root {
+  --crust: #6b3e26;
+  --crust-dark: #4a2a1a;
+  --toast: #c98b4f;
+  --crumb: #f3e3c8;
+  --cream: #fbf3e4;
+  --ink: #3a2417;
+  --ok: #4f7a3a;
+  --err: #a63d2f;
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+  line-height: 1.5;
+}
+.hidden { display: none !important; }
+
+.topbar {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: .9rem 1.5rem;
+  background: var(--crust);
+  color: var(--crumb);
+  position: sticky; top: 0; z-index: 5;
+}
+.topbar h1 { font: 800 1.5rem "Fraunces", serif; margin: 0; }
+.topbar nav { display: flex; gap: .4rem; margin-right: auto; }
+.tab {
+  background: none; border: 0; color: inherit; font: inherit;
+  padding: .4rem .9rem; border-radius: 999px; cursor: pointer;
+}
+.tab.active { background: var(--crumb); color: var(--crust-dark); font-weight: 700; }
+.tab:focus-visible, .btn:focus-visible { outline: 3px solid var(--toast); outline-offset: 2px; }
+.status { color: #888; font-size: .9rem; }
+.status.on { color: #8fd07a; }
+.status.off { color: #ff8a78; }
+
+main { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+.hero {
+  background: var(--toast);
+  color: var(--crust-dark);
+  border-radius: var(--radius);
+  padding: 2rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.hero h2 { font: 800 clamp(1.8rem, 5vw, 2.8rem) "Fraunces", serif; margin: 0 0 .25rem; }
+.hero p { margin: 0; font-size: 1.05rem; }
+h3 { font: 600 1.35rem "Fraunces", serif; color: var(--crust); margin: 1.75rem 0 .75rem; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
+.card {
+  background: #fff8ec;
+  border: 2px solid var(--crumb);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.card .emoji { font-size: 2.4rem; }
+.card h4 { margin: 0; font: 600 1.15rem "Fraunces", serif; }
+.card p { margin: 0; font-size: .9rem; color: #6d5644; flex: 1; }
+.card .price { font-weight: 700; color: var(--crust); }
+.card .meta { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
+
+.btn {
+  background: var(--crust); color: var(--crumb);
+  border: 0; border-radius: 999px;
+  padding: .55rem 1.1rem; font: 700 .95rem "DM Sans", sans-serif;
+  cursor: pointer;
+}
+.btn:hover { background: var(--crust-dark); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--crust); border: 2px solid var(--crust); }
+.btn.danger { background: var(--err); }
+.btn.small { padding: .3rem .8rem; font-size: .82rem; }
+
+.form {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .8rem;
+  background: #fff8ec; border: 2px solid var(--crumb); border-radius: var(--radius); padding: 1rem;
+}
+.form label { display: flex; flex-direction: column; gap: .25rem; font-weight: 500; font-size: .9rem; }
+.form .wide { grid-column: 1 / -1; }
+.form input, .form textarea {
+  font: inherit; padding: .5rem .7rem;
+  border: 2px solid var(--crumb); border-radius: 10px; background: #fff; color: var(--ink);
+}
+.form input:focus, .form textarea:focus { outline: none; border-color: var(--toast); }
+.actions { display: flex; gap: .6rem; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: #fff8ec; border-radius: var(--radius); overflow: hidden; }
+th, td { padding: .65rem .8rem; text-align: left; border-bottom: 1px solid var(--crumb); }
+th { background: var(--crumb); color: var(--crust-dark); }
+td:last-child { white-space: nowrap; display: flex; gap: .4rem; }
+
+.empty { color: #8a7159; font-style: italic; }
+.toast {
+  position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+  background: var(--crust-dark); color: var(--crumb);
+  padding: .7rem 1.2rem; border-radius: 999px; font-weight: 500;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
+.toast.error { background: var(--err); color: #fff; }
+
+@media (max-width: 520px) {
+  .topbar { flex-wrap: wrap; gap: .5rem 1rem; }
+}
