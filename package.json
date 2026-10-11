@@ -1,6 +1,6 @@
 {
   "name": "git-version-sync",
-  "version": "2.12.16",
+  "version": "2.12.17",
   "description": "Tools to sync and update semantic versions",
   "main": "index.js",
   "bin": {
