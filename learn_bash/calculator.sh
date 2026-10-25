@@ -1,29 +1,12 @@
 #!/usr/bin/bash
 
-#Input validation
-if [[ -z $1 || -z $2 || -z $3 ]]; then
-  echo "Missing argument detected!"
-  exit 1
-elif [[ ! $1 =~ ^[0-9]*$ || ! $3 =~ ^[0-9]*$ ]]; then
-  echo "Invalid number, please input digit only"
-  exit 1
+num1 = $1
+op = $2
+num2 = $3
+
+if [ -z num1 || -z num2 || -z op ]; then
+	echo "Missing argument!"
+	return 1
 fi
 
-# Input value when call this script [./calculator 2 + 3]
-if [[ $2 == "+" ]]; then
-  echo $(( $1 + $3 ))
-elif [[ $2 == "-" ]]; then
-  echo $(( $1 - $3 ))
-elif [[ $2 == "x" ]]; then
-  echo $(( $1 * $3 ))
-elif [[ $2 == "/" || $2 == ":" ]]; then
-  if (( $3 != 0 )); then
-    echo $(( $1 / $3 ))
-  else
-    echo "Can't divide with zero"
-  fi
-elif [[ $2 == "xx" ]]; then
-  echo $(( $1**$3 ))
-else
-  echo "invalid operation input"
-fi
+if [ op]
