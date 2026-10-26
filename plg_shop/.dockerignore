@@ -1,0 +1,6 @@
+__pycache__
+.venv
+bakery-backend/.env
+.git
+.pytest_cache
+storage/product-images
