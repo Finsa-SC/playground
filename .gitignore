@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 venv/
 .venv/
 pip-log.txt
@@ -36,6 +35,8 @@ Thumbs.db
 *.sublime-*
 .env
 .env.*
+*.env
+!*.env.example
 
 # --- Security & Recon Files (Opsional) ---
 *.dumpcap

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4b2e24">
+  <meta name="description" content="Freshly baked happiness, made daily.">
+  <title>Crumb & Cocoa — Artisan Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+  <div class="announcement">Baked fresh every morning <span>·</span> Made with a little extra love</div>
+  <header class="site-header">
+    <a class="brand" href="#shop" aria-label="Crumb and Cocoa home"><span class="brand-mark">C<span>&</span>C</span><span class="brand-copy"><strong>crumb <i>&</i> cocoa</strong><small>ARTISAN BAKERY</small></span></a>
+    <nav class="main-nav" aria-label="Main navigation"><a href="#shop" data-nav="shop" class="active">Shop</a><a href="#story" data-nav="story">Our story</a><a href="#orders" data-nav="orders" class="auth-nav hidden">My orders</a><a href="#admin" data-nav="admin" class="admin-nav hidden">Manage</a></nav>
+    <div class="header-actions"><button class="icon-button account-button" id="account-button" aria-label="Account"><span class="user-icon">♙</span><span class="account-label">Sign in</span></button><button class="cart-button" id="cart-open"><span>Bag</span><span class="cart-count" id="cart-count">0</span></button><button class="mobile-menu" id="mobile-menu" aria-label="Toggle menu">☰</button></div>
+  </header>
+
+  <main id="app" tabindex="-1">
+    <section class="hero" id="shop">
+      <div class="hero-content"><span class="eyebrow"><span class="eyebrow-line"></span> SMALL BATCH · BIG HEART</span><h1>A little joy,<br><em>fresh from the oven.</em></h1><p>Slow mornings, golden crusts, and the kind of treats worth sharing. Find your new favourite, baked fresh in our kitchen.</p><div class="hero-actions"><a class="button button-dark" href="#catalog">Explore the bakery <span>↗</span></a><span class="hero-note"><span class="sparkle">✳</span> Freshly baked daily</span></div><div class="hero-stats"><div><strong>100%</strong><span>Real ingredients</span></div><div><strong>Daily</strong><span>Fresh batches</span></div><div><strong>Made</strong><span>With love</span></div></div></div>
+      <div class="hero-art" aria-label="Illustration of freshly baked bread"><div class="sun-disc"></div><div class="hero-label label-top">GOOD THINGS<br>ARE BAKING</div><div class="bread-plate"><div class="loaf loaf-back"></div><div class="loaf loaf-front"><i></i><i></i><i></i></div><div class="croissant croissant-one"></div><div class="croissant croissant-two"></div></div><div class="hero-stamp"><span>FRESH</span><b>✳</b><span>DAILY</span></div><span class="floating-star star-a">✳</span><span class="floating-star star-b">✦</span><div class="hero-label label-bottom">BAKED WITH<br>GOODNESS</div></div>
+    </section>
+
+    <section class="trust-strip"><div><span class="trust-icon">✳</span><span><strong>Fresh every day</strong><small>Never yesterday's bake</small></span></div><div><span class="trust-icon">♡</span><span><strong>Thoughtfully made</strong><small>Ingredients we believe in</small></span></div><div><span class="trust-icon">♧</span><span><strong>A neighbourhood feel</strong><small>Good food, good people</small></span></div></section>
+
+    <section class="catalog-section section-wrap" id="catalog"><div class="section-heading"><div><span class="eyebrow">FROM OUR KITCHEN</span><h2>Today's <em>little delights</em></h2><p>Something lovely for every craving.</p></div><a class="text-link" href="#catalog">Browse the collection <span>↗</span></a></div>
+      <div class="catalog-tools"><label class="search-box"><span>⌕</span><input id="product-search" type="search" placeholder="Find your favourite…" aria-label="Search products"></label><div id="category-filters" class="category-filters"><button class="filter-chip active" data-category="all">Everything</button></div></div>
+      <div id="catalog-status" class="inline-status" aria-live="polite"></div><div id="product-grid" class="product-grid"><div class="loading-state">Warming up the oven…</div></div>
+    </section>
+
+    <section class="quote-banner" id="story"><div class="quote-decoration">“</div><div><span class="eyebrow">A NOTE FROM OUR BAKERS</span><h2>Good bread takes time.<br><em>Good moments take sharing.</em></h2><p>We believe the best things are made slowly, shared generously, and enjoyed without a rush.</p></div><div class="quote-signature">With warmth, <span>the Crumb & Cocoa team</span></div></section>
+    <section class="newsletter section-wrap"><div><span class="eyebrow">A LITTLE SOMETHING SWEET</span><h2>Keep good things <em>coming.</em></h2><p>Make your next treat a little easier to find.</p></div><button class="button button-outline" id="newsletter-shop">Find your next favourite <span>↗</span></button></section>
+  </main>
+
+  <footer class="site-footer"><a class="brand footer-brand" href="#shop"><span class="brand-mark">C<span>&</span>C</span><span class="brand-copy"><strong>crumb <i>&</i> cocoa</strong><small>ARTISAN BAKERY</small></span></a><p>Small batches, warm hearts, and something good in every bite.</p><div class="footer-bottom"><span>© <span id="year"></span> Crumb & Cocoa</span><span>Made fresh, shared with love.</span></div></footer>
+
+  <div class="overlay" id="cart-overlay" aria-hidden="true"><aside class="side-panel cart-panel" role="dialog" aria-modal="true" aria-labelledby="cart-title"><div class="panel-heading"><div><span class="eyebrow">YOUR LITTLE TREATS</span><h2 id="cart-title">Your bag <span id="cart-heading-count">(0)</span></h2></div><button class="close-button" data-close="cart-overlay" aria-label="Close bag">×</button></div><div id="cart-items" class="cart-items"></div><div class="cart-footer"><div class="cart-total"><span>Subtotal</span><strong id="cart-total">Rp 0</strong></div><p class="muted small">Delivery and payment arrangements are confirmed separately.</p><button class="button button-dark button-full" id="checkout-button">Continue to checkout <span>→</span></button></div></aside></div>
+
+  <div class="overlay" id="auth-overlay" aria-hidden="true"><section class="dialog auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button class="close-button dialog-close" data-close="auth-overlay" aria-label="Close sign in">×</button><div class="dialog-emblem">C<span>&</span>C</div><span class="eyebrow">WELCOME TO OUR TABLE</span><h2 id="auth-title">Good to have <em>you here.</em></h2><p class="dialog-intro">Sign in to order your favourites and keep track of every little treat.</p><div class="auth-tabs"><button class="auth-tab active" data-auth-mode="login">Sign in</button><button class="auth-tab" data-auth-mode="register">Create account</button></div><form id="auth-form" class="form-stack"><div id="auth-name-field" class="field hidden"><label for="auth-name">Your name</label><input id="auth-name" name="full_name" autocomplete="name" minlength="2" placeholder="How should we call you?"></div><div class="field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="1" placeholder="Your password"><small id="password-hint" class="field-hint hidden">Use at least 12 characters for a new account.</small></div><div id="auth-message" class="form-message" role="status"></div><button class="button button-dark button-full" type="submit" id="auth-submit">Sign in <span>→</span></button></form><p class="small muted auth-footnote">New accounts are created with the customer role. Admin access is assigned securely on the server.</p></section></div>
+
+  <div class="overlay" id="checkout-overlay" aria-hidden="true"><section class="dialog checkout-dialog" role="dialog" aria-modal="true" aria-labelledby="checkout-title"><button class="close-button dialog-close" data-close="checkout-overlay" aria-label="Close checkout">×</button><span class="eyebrow">ONE LAST LITTLE THING</span><h2 id="checkout-title">Ready to <em>make it yours?</em></h2><p class="dialog-intro">Review your order before sending it to our bakery.</p><div id="checkout-summary" class="checkout-summary"></div><div class="checkout-note"><span>♡</span><p>This places your order as <strong>pending</strong>. It does not charge a payment method; payment arrangements happen separately.</p></div><div id="checkout-message" class="form-message" role="status"></div><button class="button button-dark button-full" id="place-order-button">Place my order <span>→</span></button></section></div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
