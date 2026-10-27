@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:17
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "sosmed_db"  # Sesuaikan dengan environment-mu
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "rahasia"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db  # Nama ini yang nanti dipakai API buat nyambung ke database (host: db)
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+#####
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:17
+        ports:
+          - containerPort: 5432
+        env:
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_PASSWORD
+        volumeMounts:
+          # 1. Mount untuk data asli PostgreSQL
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data
+          # 2. Mount untuk skrip SQL initdb dari ConfigMap
+          - name: initdb-volume
+            mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        # Definisi volume data (sementara pakai emptyDir, nanti bisa diganti PVC biar aman)
+        - name: postgres-storage
+          emptyDir: {}
+        # Menghubungkan ConfigMap 'postgres-init-script' ke dalam pod
+        - name: initdb-volume
+          configMap:
+            name: postgres-init-script
