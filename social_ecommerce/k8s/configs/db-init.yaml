@@ -1,0 +1,947 @@
+apiVersion: v1
+data:
+  001_extensions_and_types.sql: |-
+    BEGIN;
+
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    CREATE EXTENSION IF NOT EXISTS citext;
+
+    -- User and account lifecycle
+    CREATE TYPE user_status AS ENUM (
+        'active',
+        'suspended',
+        'disabled',
+        'pending_verification'
+    );
+
+    -- Product moderation lifecycle
+    CREATE TYPE product_status AS ENUM (
+        'draft',
+        'pending',
+        'approved',
+        'rejected',
+        'suspended',
+        'archived'
+    );
+
+    CREATE TYPE moderation_action AS ENUM (
+        'submitted',
+        'approved',
+        'rejected',
+        'suspended',
+        'reinstated'
+    );
+
+    -- Media
+    CREATE TYPE media_type AS ENUM (
+        'image',
+        'video'
+    );
+
+    CREATE TYPE evidence_type AS ENUM (
+        'packing',
+        'shipping',
+        'delivery',
+        'unboxing',
+        'return_packing',
+        'return_shipping',
+        'return_unboxing',
+        'other'
+    );
+
+    -- Order and shipment lifecycle
+    CREATE TYPE order_status AS ENUM (
+        'pending_payment',
+        'paid',
+        'processing',
+        'shipped',
+        'delivered',
+        'inspection',
+        'completed',
+        'disputed',
+        'return_requested',
+        'return_shipped',
+        'refunded',
+        'cancelled',
+        'expired'
+    );
+
+    CREATE TYPE shipment_status AS ENUM (
+        'pending',
+        'packed',
+        'shipped',
+        'in_transit',
+        'delivered',
+        'return_requested',
+        'return_shipped',
+        'return_delivered',
+        'lost',
+        'cancelled'
+    );
+
+    -- Escrow and accounting
+    CREATE TYPE ledger_account_type AS ENUM (
+        'user_wallet',
+        'escrow',
+        'platform'
+    );
+
+    CREATE TYPE ledger_entry_side AS ENUM (
+        'debit',
+        'credit'
+    );
+
+    CREATE TYPE ledger_transaction_kind AS ENUM (
+        'dummy_deposit',
+        'escrow_fund',
+        'escrow_release',
+        'buyer_refund',
+        'seller_refund',
+        'platform_fee',
+        'adjustment'
+    );
+
+    -- Reviews and moderation reports
+    CREATE TYPE review_target_type AS ENUM (
+        'buyer',
+        'seller',
+        'product'
+    );
+
+    CREATE TYPE report_target_type AS ENUM (
+        'user',
+        'product',
+        'review',
+        'order'
+    );
+
+    CREATE TYPE report_status AS ENUM (
+        'open',
+        'investigating',
+        'resolved',
+        'dismissed'
+    );
+
+    -- Dispute resolution
+    CREATE TYPE dispute_status AS ENUM (
+        'open',
+        'investigating',
+        'awaiting_evidence',
+        'resolved',
+        'closed'
+    );
+
+    CREATE TYPE dispute_resolution AS ENUM (
+        'release_to_seller',
+        'refund_to_buyer',
+        'partial_refund',
+        'return_to_seller',
+        'cancel_order',
+        'other'
+    );
+
+    COMMIT;
+  002_users_and_roles.sql: |-
+    BEGIN;
+
+    CREATE TABLE users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        email CITEXT NOT NULL UNIQUE,
+        username CITEXT NOT NULL UNIQUE,
+        display_name VARCHAR(100) NOT NULL,
+
+        password_hash TEXT,
+
+        bio TEXT,
+        avatar_key TEXT,
+        banner_key TEXT,
+
+        status user_status NOT NULL DEFAULT 'active',
+        email_verified_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMPTZ,
+
+        CONSTRAINT users_username_format
+            CHECK (username::TEXT ~ '^[A-Za-z0-9_]{3,30}$'),
+
+        CONSTRAINT users_email_not_empty
+            CHECK (LENGTH(TRIM(email::TEXT)) > 0),
+
+        CONSTRAINT users_display_name_not_empty
+            CHECK (LENGTH(TRIM(display_name)) > 0)
+    );
+
+    CREATE TABLE roles (
+        id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+        name VARCHAR(30) NOT NULL UNIQUE,
+        description TEXT,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT roles_name_valid
+            CHECK (name IN ('buyer', 'seller', 'op'))
+    );
+
+    CREATE TABLE user_roles (
+        user_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        role_id SMALLINT NOT NULL
+            REFERENCES roles(id) ON DELETE RESTRICT,
+
+        granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        granted_by UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        PRIMARY KEY (user_id, role_id)
+    );
+
+    -- Record who performed sensitive actions.
+    -- Application authorization must still enforce permissions.
+    CREATE TABLE user_security_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        user_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        actor_user_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        event_type VARCHAR(80) NOT NULL,
+        ip_address INET,
+        user_agent TEXT,
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    COMMIT;
+  003_catalog.sql: |-
+    BEGIN;
+
+    CREATE TABLE categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        parent_id UUID
+            REFERENCES categories(id) ON DELETE RESTRICT,
+
+        name VARCHAR(100) NOT NULL,
+        slug CITEXT NOT NULL UNIQUE,
+        description TEXT,
+
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT categories_name_not_empty
+            CHECK (LENGTH(TRIM(name)) > 0),
+
+        CONSTRAINT categories_not_own_parent
+            CHECK (parent_id IS NULL OR parent_id <> id)
+    );
+
+    CREATE TABLE products (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        seller_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        category_id UUID
+            REFERENCES categories(id) ON DELETE RESTRICT,
+
+        title VARCHAR(200) NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+
+        price NUMERIC(18, 2) NOT NULL,
+        currency VARCHAR(3) NOT NULL DEFAULT 'IDR',
+        stock_quantity INTEGER NOT NULL DEFAULT 1,
+
+        status product_status NOT NULL DEFAULT 'draft',
+
+        submitted_at TIMESTAMPTZ,
+        approved_at TIMESTAMPTZ,
+        approved_by UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        rejection_reason TEXT,
+
+        published_at TIMESTAMPTZ,
+        archived_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT products_title_not_empty
+            CHECK (LENGTH(TRIM(title)) > 0),
+
+        CONSTRAINT products_price_nonnegative
+            CHECK (price >= 0),
+
+        CONSTRAINT products_stock_nonnegative
+            CHECK (stock_quantity >= 0),
+
+        CONSTRAINT products_currency_format
+            CHECK (currency ~ '^[A-Z]{3}$'),
+
+        CONSTRAINT products_approval_consistency
+            CHECK (
+                status <> 'approved'
+                OR (
+                    approved_at IS NOT NULL
+                    AND approved_by IS NOT NULL
+                    AND published_at IS NOT NULL
+                )
+            )
+    );
+
+    CREATE TABLE product_media (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        product_id UUID NOT NULL
+            REFERENCES products(id) ON DELETE RESTRICT,
+
+        media_type media_type NOT NULL,
+        storage_key TEXT NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+
+        original_filename TEXT,
+        file_size_bytes BIGINT,
+        checksum_sha256 VARCHAR(64),
+
+        width INTEGER,
+        height INTEGER,
+        duration_seconds NUMERIC(12, 3),
+
+        position INTEGER NOT NULL DEFAULT 0,
+        alt_text TEXT,
+
+        is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+        verified_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT product_media_storage_key_not_empty
+            CHECK (LENGTH(TRIM(storage_key)) > 0),
+
+        CONSTRAINT product_media_size_positive
+            CHECK (
+                file_size_bytes IS NULL OR file_size_bytes > 0
+            ),
+
+        CONSTRAINT product_media_dimensions_positive
+            CHECK (
+                (width IS NULL OR width > 0)
+                AND (height IS NULL OR height > 0)
+            ),
+
+        CONSTRAINT product_media_duration_nonnegative
+            CHECK (
+                duration_seconds IS NULL OR duration_seconds >= 0
+            ),
+
+        CONSTRAINT product_media_position_nonnegative
+            CHECK (position >= 0),
+
+        CONSTRAINT product_media_checksum_format
+            CHECK (
+                checksum_sha256 IS NULL
+                OR checksum_sha256 ~ '^[a-fA-F0-9]{64}$'
+            )
+    );
+
+    CREATE TABLE product_moderation_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        product_id UUID NOT NULL
+            REFERENCES products(id) ON DELETE RESTRICT,
+
+        moderator_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        action moderation_action NOT NULL,
+        reason TEXT,
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    COMMIT;
+  004_orders_and_escrow.sql: |-
+    BEGIN;
+
+    CREATE TABLE orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_number VARCHAR(40) NOT NULL UNIQUE,
+
+        buyer_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        seller_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        status order_status NOT NULL DEFAULT 'pending_payment',
+
+        currency VARCHAR(3) NOT NULL DEFAULT 'IDR',
+
+        subtotal NUMERIC(18, 2) NOT NULL DEFAULT 0,
+        shipping_fee NUMERIC(18, 2) NOT NULL DEFAULT 0,
+        platform_fee NUMERIC(18, 2) NOT NULL DEFAULT 0,
+        total_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
+
+        shipping_address_snapshot JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        paid_at TIMESTAMPTZ,
+        shipped_at TIMESTAMPTZ,
+        delivered_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
+        cancelled_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT orders_different_parties
+            CHECK (buyer_id <> seller_id),
+
+        CONSTRAINT orders_amounts_nonnegative
+            CHECK (
+                subtotal >= 0
+                AND shipping_fee >= 0
+                AND platform_fee >= 0
+                AND total_amount >= 0
+            ),
+
+        CONSTRAINT orders_total_consistency
+            CHECK (total_amount = subtotal + shipping_fee + platform_fee),
+
+        CONSTRAINT orders_currency_format
+            CHECK (currency ~ '^[A-Z]{3}$')
+    );
+
+    CREATE TABLE order_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID NOT NULL
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        product_id UUID
+            REFERENCES products(id) ON DELETE RESTRICT,
+
+        -- Immutable-at-checkout snapshot fields.
+        product_title VARCHAR(200) NOT NULL,
+        unit_price NUMERIC(18, 2) NOT NULL,
+        quantity INTEGER NOT NULL,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT order_items_price_nonnegative
+            CHECK (unit_price >= 0),
+
+        CONSTRAINT order_items_quantity_positive
+            CHECK (quantity > 0)
+    );
+
+    CREATE TABLE shipments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID NOT NULL
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        status shipment_status NOT NULL DEFAULT 'pending',
+
+        carrier VARCHAR(100),
+        tracking_number VARCHAR(200),
+
+        shipped_at TIMESTAMPTZ,
+        delivered_at TIMESTAMPTZ,
+
+        return_tracking_number VARCHAR(200),
+        return_shipped_at TIMESTAMPTZ,
+        return_delivered_at TIMESTAMPTZ,
+
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- A record of evidence, not the video itself.
+    -- Keep the object private in storage and authorize access in the backend.
+    CREATE TABLE order_evidence (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID NOT NULL
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        shipment_id UUID
+            REFERENCES shipments(id) ON DELETE RESTRICT,
+
+        uploader_id UUID
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        evidence_type evidence_type NOT NULL,
+
+        storage_key TEXT NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+
+        file_size_bytes BIGINT,
+        checksum_sha256 VARCHAR(64) NOT NULL,
+
+        captured_at TIMESTAMPTZ,
+        uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        CONSTRAINT order_evidence_storage_key_not_empty
+            CHECK (LENGTH(TRIM(storage_key)) > 0),
+
+        CONSTRAINT order_evidence_size_positive
+            CHECK (
+                file_size_bytes IS NULL OR file_size_bytes > 0
+            ),
+
+        CONSTRAINT order_evidence_checksum_format
+            CHECK (checksum_sha256 ~ '^[a-fA-F0-9]{64}$')
+    );
+
+    -- Ledger accounts are logical accounting accounts, not real bank accounts.
+    CREATE TABLE ledger_accounts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        account_type ledger_account_type NOT NULL,
+
+        owner_user_id UUID
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        currency VARCHAR(3) NOT NULL DEFAULT 'IDR',
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT ledger_account_currency_format
+            CHECK (currency ~ '^[A-Z]{3}$'),
+
+        CONSTRAINT ledger_account_owner_consistency
+            CHECK (
+                (account_type = 'user_wallet' AND owner_user_id IS NOT NULL)
+                OR
+                (account_type IN ('escrow', 'platform') AND owner_user_id IS NULL)
+            ),
+
+        CONSTRAINT ledger_account_unique_identity
+            UNIQUE NULLS NOT DISTINCT (account_type, owner_user_id, currency)
+    );
+
+    CREATE TABLE ledger_transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        kind ledger_transaction_kind NOT NULL,
+
+        -- Caller-generated key prevents duplicate processing on retries.
+        idempotency_key VARCHAR(200) NOT NULL UNIQUE,
+
+        currency VARCHAR(3) NOT NULL DEFAULT 'IDR',
+        description TEXT,
+
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT ledger_transaction_currency_format
+            CHECK (currency ~ '^[A-Z]{3}$')
+    );
+
+    CREATE TABLE ledger_entries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        transaction_id UUID NOT NULL
+            REFERENCES ledger_transactions(id) ON DELETE RESTRICT,
+
+        account_id UUID NOT NULL
+            REFERENCES ledger_accounts(id) ON DELETE RESTRICT,
+
+        side ledger_entry_side NOT NULL,
+        amount NUMERIC(18, 2) NOT NULL,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT ledger_entry_amount_positive
+            CHECK (amount > 0)
+    );
+
+    COMMIT;
+  005_reviews_reports.sql: |-
+    BEGIN;
+
+    CREATE TABLE disputes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID NOT NULL UNIQUE
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        opened_by UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        status dispute_status NOT NULL DEFAULT 'open',
+
+        reason VARCHAR(100) NOT NULL,
+        description TEXT NOT NULL,
+
+        assigned_operator_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        resolution dispute_resolution,
+        resolution_notes TEXT,
+
+        resolved_by UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        resolved_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT disputes_description_not_empty
+            CHECK (LENGTH(TRIM(description)) > 0),
+
+        CONSTRAINT disputes_resolution_consistency
+            CHECK (
+                (
+                    status IN ('resolved', 'closed')
+                    AND resolution IS NOT NULL
+                    AND resolved_at IS NOT NULL
+                )
+                OR
+                (
+                    status NOT IN ('resolved', 'closed')
+                    AND resolution IS NULL
+                    AND resolved_at IS NULL
+                )
+            )
+    );
+
+    CREATE TABLE dispute_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        dispute_id UUID NOT NULL
+            REFERENCES disputes(id) ON DELETE RESTRICT,
+
+        actor_user_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        event_type VARCHAR(80) NOT NULL,
+        message TEXT,
+        metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE reviews (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        order_id UUID NOT NULL
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        reviewer_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        target_user_id UUID
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        target_type review_target_type NOT NULL,
+
+        product_id UUID
+            REFERENCES products(id) ON DELETE RESTRICT,
+
+        rating SMALLINT NOT NULL,
+        body TEXT,
+
+        is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT reviews_rating_range
+            CHECK (rating BETWEEN 1 AND 5),
+
+        CONSTRAINT reviews_target_consistency
+            CHECK (
+                (
+                    target_type IN ('buyer', 'seller')
+                    AND target_user_id IS NOT NULL
+                    AND product_id IS NULL
+                    AND reviewer_id <> target_user_id
+                )
+                OR
+                (
+                    target_type = 'product'
+                    AND target_user_id IS NULL
+                    AND product_id IS NOT NULL
+                )
+            ),
+
+        CONSTRAINT reviews_unique_user_target
+            UNIQUE NULLS NOT DISTINCT (
+                order_id,
+                reviewer_id,
+                target_type,
+                target_user_id,
+                product_id
+            )
+    );
+
+    CREATE TABLE reports (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        reporter_id UUID NOT NULL
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        target_type report_target_type NOT NULL,
+
+        target_user_id UUID
+            REFERENCES users(id) ON DELETE RESTRICT,
+
+        product_id UUID
+            REFERENCES products(id) ON DELETE RESTRICT,
+
+        review_id UUID
+            REFERENCES reviews(id) ON DELETE RESTRICT,
+
+        order_id UUID
+            REFERENCES orders(id) ON DELETE RESTRICT,
+
+        reason VARCHAR(100) NOT NULL,
+        description TEXT,
+
+        status report_status NOT NULL DEFAULT 'open',
+
+        assigned_operator_id UUID
+            REFERENCES users(id) ON DELETE SET NULL,
+
+        resolution_notes TEXT,
+        resolved_at TIMESTAMPTZ,
+
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT reports_target_consistency
+            CHECK (
+                (
+                    target_type = 'user'
+                    AND target_user_id IS NOT NULL
+                    AND product_id IS NULL
+                    AND review_id IS NULL
+                    AND order_id IS NULL
+                )
+                OR
+                (
+                    target_type = 'product'
+                    AND target_user_id IS NULL
+                    AND product_id IS NOT NULL
+                    AND review_id IS NULL
+                    AND order_id IS NULL
+                )
+                OR
+                (
+                    target_type = 'review'
+                    AND target_user_id IS NULL
+                    AND product_id IS NULL
+                    AND review_id IS NOT NULL
+                    AND order_id IS NULL
+                )
+                OR
+                (
+                    target_type = 'order'
+                    AND target_user_id IS NULL
+                    AND product_id IS NULL
+                    AND review_id IS NULL
+                    AND order_id IS NOT NULL
+                )
+            ),
+
+        CONSTRAINT reports_resolution_consistency
+            CHECK (
+                (
+                    status IN ('resolved', 'dismissed')
+                    AND resolved_at IS NOT NULL
+                )
+                OR
+                (
+                    status IN ('open', 'investigating')
+                    AND resolved_at IS NULL
+                )
+            )
+    );
+
+    COMMIT;
+  006_indexes_and_triggers.sql: |-
+    BEGIN;
+
+    -- Generic updated_at maintenance.
+    CREATE FUNCTION set_updated_at()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+    END;
+    $$;
+
+    CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_categories_updated_at
+    BEFORE UPDATE ON categories
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_products_updated_at
+    BEFORE UPDATE ON products
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_shipments_updated_at
+    BEFORE UPDATE ON shipments
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_disputes_updated_at
+    BEFORE UPDATE ON disputes
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_reviews_updated_at
+    BEFORE UPDATE ON reviews
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    CREATE TRIGGER trg_reports_updated_at
+    BEFORE UPDATE ON reports
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+    -- Feed: approved products ordered by publication time.
+    CREATE INDEX idx_products_public_feed
+        ON products (published_at DESC, id DESC)
+        WHERE status = 'approved';
+
+    -- Seller dashboard.
+    CREATE INDEX idx_products_seller_created
+        ON products (seller_id, created_at DESC);
+
+    CREATE INDEX idx_products_moderation_queue
+        ON products (submitted_at ASC, id ASC)
+        WHERE status = 'pending';
+
+    CREATE INDEX idx_products_category_feed
+        ON products (category_id, published_at DESC)
+        WHERE status = 'approved';
+
+    CREATE INDEX idx_product_media_product_position
+        ON product_media (product_id, position, id);
+
+    CREATE INDEX idx_product_moderation_product_created
+        ON product_moderation_events (product_id, created_at DESC);
+
+    CREATE INDEX idx_product_moderation_actor_created
+        ON product_moderation_events (moderator_id, created_at DESC);
+
+    -- Users and security audit.
+    CREATE INDEX idx_user_roles_role
+        ON user_roles (role_id, user_id);
+
+    CREATE INDEX idx_security_events_user_created
+        ON user_security_events (user_id, created_at DESC);
+
+    -- Orders.
+    CREATE INDEX idx_orders_buyer_created
+        ON orders (buyer_id, created_at DESC);
+
+    CREATE INDEX idx_orders_seller_created
+        ON orders (seller_id, created_at DESC);
+
+    CREATE INDEX idx_orders_status_created
+        ON orders (status, created_at DESC);
+
+    CREATE INDEX idx_order_items_order
+        ON order_items (order_id);
+
+    CREATE INDEX idx_shipments_order_created
+        ON shipments (order_id, created_at DESC);
+
+    CREATE INDEX idx_order_evidence_order_created
+        ON order_evidence (order_id, uploaded_at DESC);
+
+    CREATE INDEX idx_order_evidence_shipment
+        ON order_evidence (shipment_id);
+
+    -- Ledger.
+    CREATE INDEX idx_ledger_transactions_order_created
+        ON ledger_transactions (order_id, created_at DESC);
+
+    CREATE INDEX idx_ledger_entries_account_created
+        ON ledger_entries (account_id, created_at DESC, id);
+
+    CREATE INDEX idx_ledger_entries_transaction
+        ON ledger_entries (transaction_id);
+
+    -- Reviews, reports, and disputes.
+    CREATE INDEX idx_reviews_target_user_created
+        ON reviews (target_user_id, created_at DESC)
+        WHERE target_user_id IS NOT NULL;
+
+    CREATE INDEX idx_reviews_product_created
+        ON reviews (product_id, created_at DESC)
+        WHERE product_id IS NOT NULL;
+
+    CREATE INDEX idx_disputes_status_created
+        ON disputes (status, created_at ASC);
+
+    CREATE INDEX idx_dispute_events_dispute_created
+        ON dispute_events (dispute_id, created_at ASC);
+
+    CREATE INDEX idx_reports_status_created
+        ON reports (status, created_at ASC);
+
+    CREATE INDEX idx_reports_operator_status
+        ON reports (assigned_operator_id, status);
+
+    -- Prevent updates and deletes on append-only records.
+    CREATE FUNCTION prevent_record_mutation()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+        RAISE EXCEPTION
+            'Records in table % are append-only; % is not allowed',
+            TG_TABLE_NAME,
+            TG_OP;
+    END;
+    $$;
+
+    CREATE TRIGGER trg_ledger_transactions_immutable
+    BEFORE UPDATE OR DELETE ON ledger_transactions
+    FOR EACH ROW EXECUTE FUNCTION prevent_record_mutation();
+
+    CREATE TRIGGER trg_ledger_entries_immutable
+    BEFORE UPDATE OR DELETE ON ledger_entries
+    FOR EACH ROW EXECUTE FUNCTION prevent_record_mutation();
+
+    CREATE TRIGGER trg_product_moderation_events_immutable
+    BEFORE UPDATE OR DELETE ON product_moderation_events
+    FOR EACH ROW EXECUTE FUNCTION prevent_record_mutation();
+
+    CREATE TRIGGER trg_dispute_events_immutable
+    BEFORE UPDATE OR DELETE ON dispute_events
+    FOR EACH ROW EXECUTE FUNCTION prevent_record_mutation();
+
+    COMMIT;
+kind: ConfigMap
+metadata:
+  name: db-init

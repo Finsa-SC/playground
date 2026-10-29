@@ -1,0 +1,312 @@
+apiVersion: v1
+data:
+  001_roles.sql: |-
+    BEGIN;
+
+    INSERT INTO roles (name, description)
+    VALUES
+        ('buyer', 'Can browse products and participate in purchases.'),
+        ('seller', 'Can create and manage product listings.'),
+        ('op', 'Application operator responsible for moderation and disputes.')
+    ON CONFLICT (name)
+    DO UPDATE SET
+        description = EXCLUDED.description;
+
+    COMMIT;
+  002_sample_data.sql: |-
+    BEGIN;
+
+    -- =========================================================
+    -- USERS
+    -- Password hashes are NULL intentionally.
+    -- These accounts cannot authenticate until credentials are
+    -- configured through the application's authentication flow.
+    -- =========================================================
+
+    INSERT INTO users (
+        id,
+        email,
+        username,
+        display_name,
+        bio,
+        avatar_key,
+        banner_key,
+        status,
+        email_verified_at
+    )
+    VALUES
+    (
+        '10000000-0000-4000-8000-000000000001',
+        'buyer@example.test',
+        'sample_buyer',
+        'Sample Buyer',
+        'Development account for testing purchases.',
+        'profiles/avatars/sample-buyer.webp',
+        'profiles/banners/sample-buyer.webp',
+        'active',
+        NOW()
+    ),
+    (
+        '10000000-0000-4000-8000-000000000002',
+        'seller1@example.test',
+        'sample_seller',
+        'Sample Seller',
+        'Development seller account.',
+        'profiles/avatars/sample-seller.webp',
+        'profiles/banners/sample-seller.webp',
+        'active',
+        NOW()
+    ),
+    (
+        '10000000-0000-4000-8000-000000000003',
+        'seller2@example.test',
+        'craft_seller',
+        'Craft Seller',
+        'Another seller for feed testing.',
+        'profiles/avatars/craft-seller.webp',
+        'profiles/banners/craft-seller.webp',
+        'active',
+        NOW()
+    ),
+    (
+        '10000000-0000-4000-8000-000000000004',
+        'operator@example.test',
+        'sample_operator',
+        'Sample Operator',
+        'Development operator account.',
+        'profiles/avatars/sample-operator.webp',
+        'profiles/banners/sample-operator.webp',
+        'active',
+        NOW()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+
+    -- =========================================================
+    -- USER ROLES
+    -- =========================================================
+
+    INSERT INTO user_roles (user_id, role_id)
+    SELECT seed.user_id, roles.id
+    FROM (
+        VALUES
+            ('10000000-0000-4000-8000-000000000001'::UUID, 'buyer'),
+            ('10000000-0000-4000-8000-000000000002'::UUID, 'seller'),
+            ('10000000-0000-4000-8000-000000000003'::UUID, 'seller'),
+            ('10000000-0000-4000-8000-000000000004'::UUID, 'op')
+    ) AS seed(user_id, role_name)
+    JOIN roles ON roles.name = seed.role_name
+    ON CONFLICT (user_id, role_id) DO NOTHING;
+
+
+    -- =========================================================
+    -- CATEGORIES
+    -- =========================================================
+
+    INSERT INTO categories (
+        id,
+        parent_id,
+        name,
+        slug,
+        description
+    )
+    VALUES
+    (
+        '20000000-0000-4000-8000-000000000001',
+        NULL,
+        'Electronics',
+        'electronics',
+        'Electronic devices and accessories.'
+    ),
+    (
+        '20000000-0000-4000-8000-000000000002',
+        NULL,
+        'Fashion',
+        'fashion',
+        'Clothing and fashion accessories.'
+    ),
+    (
+        '20000000-0000-4000-8000-000000000003',
+        NULL,
+        'Home and Living',
+        'home-living',
+        'Products for home and everyday living.'
+    ),
+    (
+        '20000000-0000-4000-8000-000000000004',
+        '20000000-0000-4000-8000-000000000001',
+        'Accessories',
+        'electronics-accessories',
+        'Accessories for electronic devices.'
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+
+    -- =========================================================
+    -- PRODUCTS
+    -- One approved product, one pending product, and one draft.
+    -- =========================================================
+
+    INSERT INTO products (
+        id,
+        seller_id,
+        category_id,
+        title,
+        description,
+        price,
+        currency,
+        stock_quantity,
+        status,
+        submitted_at,
+        approved_at,
+        approved_by,
+        published_at
+    )
+    VALUES
+    (
+        '30000000-0000-4000-8000-000000000001',
+        '10000000-0000-4000-8000-000000000002',
+        '20000000-0000-4000-8000-000000000004',
+        'Wireless Mechanical Keyboard',
+        'Sample product for testing the public feed and checkout flow.',
+        450000.00,
+        'IDR',
+        10,
+        'approved',
+        NOW() - INTERVAL '2 days',
+        NOW() - INTERVAL '1 day',
+        '10000000-0000-4000-8000-000000000004',
+        NOW() - INTERVAL '1 day'
+    ),
+    (
+        '30000000-0000-4000-8000-000000000002',
+        '10000000-0000-4000-8000-000000000003',
+        '20000000-0000-4000-8000-000000000002',
+        'Handmade Canvas Tote Bag',
+        'A sample listing waiting for operator moderation.',
+        85000.00,
+        'IDR',
+        25,
+        'pending',
+        NOW(),
+        NULL,
+        NULL,
+        NULL
+    ),
+    (
+        '30000000-0000-4000-8000-000000000003',
+        '10000000-0000-4000-8000-000000000002',
+        '20000000-0000-4000-8000-000000000003',
+        'Ceramic Desk Organizer',
+        'A draft listing that has not been submitted for review.',
+        65000.00,
+        'IDR',
+        8,
+        'draft',
+        NULL,
+        NULL,
+        NULL,
+        NULL
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+
+    -- =========================================================
+    -- PRODUCT MEDIA
+    -- Storage keys only; these files do not exist automatically.
+    -- =========================================================
+
+    INSERT INTO product_media (
+        id,
+        product_id,
+        media_type,
+        storage_key,
+        mime_type,
+        original_filename,
+        file_size_bytes,
+        position,
+        alt_text,
+        is_verified,
+        verified_at
+    )
+    VALUES
+    (
+        '40000000-0000-4000-8000-000000000001',
+        '30000000-0000-4000-8000-000000000001',
+        'image',
+        'products/30000000-0000-4000-8000-000000000001/keyboard.webp',
+        'image/webp',
+        'keyboard.webp',
+        NULL,
+        0,
+        'Wireless mechanical keyboard',
+        FALSE,
+        NULL
+    ),
+    (
+        '40000000-0000-4000-8000-000000000002',
+        '30000000-0000-4000-8000-000000000002',
+        'image',
+        'products/30000000-0000-4000-8000-000000000002/tote-bag.webp',
+        'image/webp',
+        'tote-bag.webp',
+        NULL,
+        0,
+        'Handmade canvas tote bag',
+        FALSE,
+        NULL
+    ),
+    (
+        '40000000-0000-4000-8000-000000000003',
+        '30000000-0000-4000-8000-000000000003',
+        'video',
+        'products/30000000-0000-4000-8000-000000000003/organizer-demo.mp4',
+        'video/mp4',
+        'organizer-demo.mp4',
+        NULL,
+        0,
+        'Ceramic desk organizer demonstration',
+        FALSE,
+        NULL
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+
+    -- =========================================================
+    -- MODERATION HISTORY
+    -- =========================================================
+
+    INSERT INTO product_moderation_events (
+        id,
+        product_id,
+        moderator_id,
+        action,
+        reason,
+        metadata,
+        created_at
+    )
+    VALUES
+    (
+        '50000000-0000-4000-8000-000000000001',
+        '30000000-0000-4000-8000-000000000001',
+        '10000000-0000-4000-8000-000000000004',
+        'approved',
+        'Development seed: sample product approved.',
+        '{"source":"seed","environment":"development"}'::JSONB,
+        NOW() - INTERVAL '1 day'
+    ),
+    (
+        '50000000-0000-4000-8000-000000000002',
+        '30000000-0000-4000-8000-000000000002',
+        NULL,
+        'submitted',
+        'Development seed: awaiting moderation.',
+        '{"source":"seed","environment":"development"}'::JSONB,
+        NOW()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+    COMMIT;
+kind: ConfigMap
+metadata:
+  name: db-init

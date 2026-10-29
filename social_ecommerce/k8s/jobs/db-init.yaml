@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: db-initiator
+          image: postgres:17
+          command:
+            - "sh"
+            - "-c"
+            - |
+              set -e
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              
+              echo "Waiting for PostgreSQL to start..."
+              until pg_isready -h db-service -U "$POSTGRES_USER"; do
+                sleep 2
+              done
+              
+              echo "Running database init scripts..."
+              for file in /sql-scripts/*.sql; do
+                echo "Executing $file..."
+                psql -h db-service -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$file"
+              done
+              echo "Database initialization completed successfully!"
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: init-script-volume
+              mountPath: /sql-scripts
+      restartPolicy: OnFailure
+      volumes:
+        - name: init-script-volume
+          configMap:
+            name: db-init
+  backoffLimit: 3
