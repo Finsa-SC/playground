@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: proxy
+  name: proxy-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: site-data
+              mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-sites
+              mountPath: /etc/nginx/sites
+      volumes:
+        - name: site-data
+          persistentVolumeClaim:
+            claimName: static-pvc
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+        - name: nginx-sites
+          configMap:
+            name: nginx-sites
+status: {}

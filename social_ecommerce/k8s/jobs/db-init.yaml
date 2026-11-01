@@ -21,7 +21,7 @@ spec:
               done
               
               echo "Running database init scripts..."
-              for file in /sql-scripts/*.sql; do
+              for file in /sql-scripts/init/*.sql; do
                 echo "Executing $file..."
                 psql -h db-service -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$file"
               done
@@ -44,7 +44,7 @@ spec:
                   key: DB_PASSWORD
           volumeMounts:
             - name: init-script-volume
-              mountPath: /sql-scripts
+              mountPath: /sql-scripts/init
       restartPolicy: OnFailure
       volumes:
         - name: init-script-volume

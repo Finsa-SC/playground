@@ -309,4 +309,4 @@ data:
     COMMIT;
 kind: ConfigMap
 metadata:
-  name: db-init
+  name: db-seed

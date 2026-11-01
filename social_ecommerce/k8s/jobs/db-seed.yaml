@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-seed-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: db-seeder
+          image: postgres:17
+          command:
+            - "sh"
+            - "-c"
+            - |
+              set -e
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              
+              echo "Waiting for PostgreSQL to start..."
+              until pg_isready -h db-service -U "$POSTGRES_USER"; do
+                sleep 2
+              done
+              
+              echo "Running database seed scripts..."
+              for file in /sql-scripts/seeds/*.sql; do
+                if [ -f "$file" ]; then
+                  echo "Executing seed file: $file..."
+                  psql -h db-service -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$file"
+                fi
+              done
+              echo "Database seeding completed successfully!"
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: seed-script-volume
+              mountPath: /sql-scripts/seeds
+      restartPolicy: OnFailure
+      volumes:
+        - name: seed-script-volume
+          configMap:
+            name: db-seed
+  backoffLimit: 3
