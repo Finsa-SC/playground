@@ -50,3 +50,4 @@ wordlists/
 dist/
 build/
 *.egg-info/
+key.txt
