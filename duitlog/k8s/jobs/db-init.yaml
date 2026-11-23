@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+  namespace: playground
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-init-job
+          image: postgres:17
+          command: ["sh", "-c"]
+          args:
+            - >-
+              until ps_isready -h postgres-service -p 5432 \
+                -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "Waiting for PostgreSQL"
+                sleep 2
+              done
+              
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              psql -h postgres-service -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+              -v ON_ERROR_STOP=1
+              -f /var/dbinit/001-init.sql
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: db-init-data
+              mountPath: /var/dbinit
+      volumes:
+        - name: db-init-data
+          configMap:
+            name: db-init-cm

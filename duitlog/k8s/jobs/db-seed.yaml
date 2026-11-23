@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-seed-job
+  namespace: playground
+spec:
+  template:
+    spec:
+      containers:
+        - name: db-seed-job
+          image: postgres:17
+          command: ["sh", "-c"]
+          args:
+            - >-
+              PGPASSWORD="$POSTGRES_PASSWORD"
+              psql -h postgres -U "$POSTSGRES_USER" -d "$POSTGRES_DB"
+              -v ON_ERROR_STOP=1
+              -f /var/dbseed/002-seed.sql
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: db-seed-data
+              mountPath: /var/dbseed
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: db-seed-data
+          configMap:
+            name: db-seed-cm
+
+      restartPolicy: Never
