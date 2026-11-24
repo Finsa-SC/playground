@@ -3,8 +3,6 @@
 -- Jalankan setelah init.sql dieksekusi
 -- ============================================================================
 
-PRAGMA foreign_keys = ON;
-
 -- 1. Seed Categories
 INSERT INTO categories (id, name, type, color_hex) VALUES
     (1, 'Makan & Minum', 'EXPENSE', '#F97316'),
@@ -15,14 +13,18 @@ INSERT INTO categories (id, name, type, color_hex) VALUES
     (6, 'Gaji & Pemasukan', 'INCOME', '#14B8A6');
 
 -- 2. Seed Subscriptions
-INSERT INTO subscriptions (id, category_id, service_name, amount, billing_cycle, next_billing_date, is_active, notes) VALUES
-    (1, 3, 'Cloud VPS Server', 150000.00, 'MONTHLY', '2026-12-01', 1, 'Server hosting project pribadi'),
-    (2, 3, 'Spotify Premium', 54990.00, 'MONTHLY', '2026-12-05', 1, 'Paket individual'),
-    (3, 3, 'Domain .com Tahunan', 210000.00, 'YEARLY', '2027-06-15', 1, 'Perpanjangan domain utama'),
-    (4, 4, 'Internet Fiber Rumah', 350000.00, 'MONTHLY', '2026-12-10', 1, 'Tagihan WiFi bulanan');
+INSERT INTO subscriptions
+    (id, category_id, service_name, amount, billing_cycle, next_billing_date, is_active, notes)
+VALUES
+    (1, 3, 'Cloud VPS Server', 150000.00, 'MONTHLY', '2026-12-01', TRUE, 'Server hosting project pribadi'),
+    (2, 3, 'Spotify Premium', 54990.00, 'MONTHLY', '2026-12-05', TRUE, 'Paket individual'),
+    (3, 3, 'Domain .com Tahunan', 210000.00, 'YEARLY', '2027-06-15', TRUE, 'Perpanjangan domain utama'),
+    (4, 4, 'Internet Fiber Rumah', 350000.00, 'MONTHLY', '2026-12-10', TRUE, 'Tagihan WiFi bulanan');
 
 -- 3. Seed Transactions
-INSERT INTO transactions (category_id, subscription_id, amount, tx_date, note) VALUES
+INSERT INTO transactions
+    (category_id, subscription_id, amount, tx_date, note)
+VALUES
     (6, NULL, 7500000.00, '2026-11-01', 'Gaji bulan November'),
     (3, 1, 150000.00, '2026-11-01', 'Perpanjangan Cloud VPS November'),
     (3, 2, 54990.00, '2026-11-05', 'Tagihan Spotify November'),
