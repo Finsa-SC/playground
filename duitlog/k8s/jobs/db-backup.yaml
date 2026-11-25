@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup-cronjob
+  namespace: playground
+spec:
+  jobTemplate:
+    metadata:
+      name: db-backup-cronjob
+    spec:
+      template:
+        spec:
+          containers:
+            - name: db-backup-cronjob
+              image: postgres:17
+              command: [ "sh", "-c" ]
+              args:
+                - |
+                  until pg_isready -h postgres-service -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                    echo "Waiting for PostgreSQL..."
+                    sleep 2
+                  done
+                  
+                  pg_dump -h postgres-service -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" | gzip > /backup/
+
+                  echo "Database has been backuped at $(date)."
+
+              env:
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_PASSWORD
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "5000m"
+                  memory: "1Gi"
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backup
+
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-data
+              persistentVolumeClaim:
+                claimName: postgres-backup-pvc
+  schedule: '0 * * * *'
+  startingDeadlineSeconds: 72000

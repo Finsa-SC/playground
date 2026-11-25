@@ -4,3 +4,4 @@ resources:
   - platform/postgres
   - jobs/db-init.yaml
   - jobs/db-seed.yaml
+  - jobs/db-backup.yaml
